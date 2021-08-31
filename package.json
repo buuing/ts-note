@@ -1,0 +1,9 @@
+{
+  "name": "ts-note",
+  "version": "1.0.0",
+  "description": "",
+  "main": "",
+  "scripts": {
+    "dev": "docsify serve -o"
+  }
+}
