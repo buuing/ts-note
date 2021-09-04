@@ -27,11 +27,11 @@
   content: "⭐";
 }
 .app-sub-sidebar li {
-  margin: 6px 0 6px 12px;
+  margin: 6px 0 6px 15px;
 }
 /* 三级标题 */
 .app-sub-sidebar>.app-sub-sidebar {
-  margin: 6px 0 6px 22px;
+  margin: 6px 0 6px 15px;
 }
 .app-sub-sidebar>.app-sub-sidebar li a:before {
   content: "📚";
@@ -54,6 +54,9 @@ h6>a :before {
   font-size: 1em;
   transform: translateX(-0.8em);
   font-weight: bold;
+}
+blockquote>ul.task-list {
+  transform: translateY(-10px);
 }
 .markdown-section p.warn {
   background-color: rgba(97, 144, 232, 0.3);

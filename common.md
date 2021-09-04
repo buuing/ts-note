@@ -192,10 +192,44 @@ let obj: Obj = {
 obj.fn1()() // obj
 obj.fn2()() // 严格模式: undefined, 非严格模式: window
 ```
+#### No Implicit This 禁止隐式的this
 
-!> 箭头函数里无法定义`this`的类型
+> 如果开启了`noImplicitThis`选项 (默认为false), [下面代码](https://www.typescriptlang.org/play?#code/FAGwpgLgBAZgdlAvFAFASiQPigb2FAqAYwHs4BnE8AOhBIHMUIALAS3LWAF9hRIoSAIwBWSXPkIB6AFTSJhaVECb8YBnEwODGgLO0W7QN4+gaPVAPPKA5OUCFNoEhzQBSu8goqZtyALigB1VnAAmJAO5QAPlAA3ElZ3TkIbVG1HKAgATwAHMBIYKHo6QQBDEAAVezDw6UlreABGJ3QscXDw0goqMFoGO3Z8gi4AGmK4ACZyjERsHChJSShAOzNALASYAFc4IghWMkB75UBTuU0o-UBTc0ARyMB-BMAzaMApFWtwgCdIadOEGbmFskj7J1cPbz9A4NCq6u-ayho6RhRVrVHjhDpdADMThu80WCAqeG+BHOEEu8P6gxOSN+9UagLyWLa1h4PGA8AqIygXjcni8wCEwmopQpo2pLzpDKZPXQLKpNO89JEXIhPIwlIZgsZ8Ah1CIWRAKDZtLQvKVAqAA)里会出现两处报错
+- [x] **noImplicitThis** *(Enable error reporting when `this` is given the type `any`.)*  
+
+
 
 ```ts
-const fn1 = function(this: void) {} // 正确
-const fn2 = (this: any) => {} // 报错, 箭头函数不能定义this的类型
+let fn = () => {
+  // 报错: The containing arrow function captures the global value of 'this'
+  console.log(this)
+}
+
+let obj = {
+  /**
+   * 这里指定this类型似乎没有用
+   * (this: Window | void) => void
+   * (this: typeof globalThis) => void
+   */
+  fn1: () => {
+    // 报错: The containing arrow function captures the global value of 'this'
+    console.log(this)
+  },
+  fn2: () => { // 普通function可以指定this类型来规避警告
+    return function (this: Window | void) {
+      console.log(this)
+    }
+  },
+  fn3: function () {
+    return () => {
+      console.log(this)
+    }
+  }
+}
+
+fn() // window
+obj.fn1() // window
+obj.fn2()() // window
+obj.fn3()() // obj
+obj.fn3.call(window)() // window
 ```
