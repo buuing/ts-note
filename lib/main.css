@@ -24,33 +24,36 @@
 }
 /* 二级标题 */
 .app-sub-sidebar li a:before {
-  content: "-";
+  content: "⭐";
+}
+.app-sub-sidebar li {
+  margin: 6px 0 6px 12px;
 }
 /* 三级标题 */
 .app-sub-sidebar>.app-sub-sidebar {
-  margin: 6px 0 6px 15px;
+  margin: 6px 0 6px 22px;
 }
 .app-sub-sidebar>.app-sub-sidebar li a:before {
-  content: "#";
+  content: "📚";
 }
 /* 增加h5样式 */
-h5 {
-  padding-left: 10px;
+h1, h2, h3, h4, h5, h6 {
+  color: #34495e;
+  letter-spacing: 0.5px;
 }
-h5>a:before {
+h1>a :before,
+h2>a :before,
+h3>a :before,
+h4>a :before,
+h5>a :before,
+h6>a :before {
   content: "#";
   color: #6190e8;
   position: absolute;
   left: 0.4em;
-  margin-top: -0.05em;
-  padding-right: 0.5em;
-  font-size: 1.2em;
-  /* line-height: 1; */
+  font-size: 1em;
+  transform: translateX(-0.8em);
   font-weight: bold;
-}
-.markdown-section h5 a strong {
-  color: #6190e8;
-  letter-spacing: 1px;
 }
 .markdown-section p.warn {
   background-color: rgba(97, 144, 232, 0.3);

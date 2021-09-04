@@ -200,7 +200,7 @@ function loop(): never {
 }
 ```
 
-## Object [对象]
+## Object
 
 - 宽泛的`object`类型
 
