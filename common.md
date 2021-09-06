@@ -88,28 +88,32 @@ let obj: AnotherType = {
 定义函数类型有很多种方式, 单行时返回值类型使用`=>`, 多行时返回值类型使用`:`
 
 ```ts
-// 方式1: 声明变量时定义函数类型
-let fn: (name: string) => void
+// 方式1: Function 全局类型
+// 不推荐, 因为通过 Function 函数返回值的类型是一个 any
+let fn1: Function
 
-// 方式2: 类型别名单行简写
+// 方式2: 声明变量时定义函数类型
+let fn2: (name: string) => void
+
+// 方式3: 类型别名单行简写
 type FnType1 = (name: string) => void
 
-// 方式3: 类型别名多行写法
+// 方式4: 类型别名多行写法
 type FnType2 = {
   (name: string): void
 }
 
-// 方式4: 使用接口进行定义
+// 方式5: 使用接口进行定义
 interface FnType3 {
   (name: string): void // 函数本身的类型
   str: string // 函数属性
-  num?: number // 可选属性
-  readonly desc: string // 只读属性
-  add(x: number, y: number): number // 函数属性定义方法1
-  reduce: (x: number, y: number) => number // 函数属性定义方法2
+  num?: number // 函数可选属性
+  readonly desc: string // 函数只读属性
+  add(x: number, y: number): number // 函数的方法1
+  reduce: (x: number, y: number) => number // 函数的方法2
 }
 
-function test(fn: FnType3) {
+function test(fn: FnType3): void {
   fn.str = 'hello'
   fn.desc = '' // 报错, 因为只读属性只能在初始化时赋值
   fn.add(1, 2)
@@ -192,12 +196,11 @@ let obj: Obj = {
 obj.fn1()() // obj
 obj.fn2()() // 严格模式: undefined, 非严格模式: window
 ```
+
 #### No Implicit This 禁止隐式的this
 
-> 如果开启了`noImplicitThis`选项 (默认为false), [下面代码](https://www.typescriptlang.org/play?#code/FAGwpgLgBAZgdlAvFAFASiQPigb2FAqAYwHs4BnE8AOhBIHMUIALAS3LWAF9hRIoSAIwBWSXPkIB6AFTSJhaVECb8YBnEwODGgLO0W7QN4+gaPVAPPKA5OUCFNoEhzQBSu8goqZtyALigB1VnAAmJAO5QAPlAA3ElZ3TkIbVG1HKAgATwAHMBIYKHo6QQBDEAAVezDw6UlreABGJ3QscXDw0goqMFoGO3Z8gi4AGmK4ACZyjERsHChJSShAOzNALASYAFc4IghWMkB75UBTuU0o-UBTc0ARyMB-BMAzaMApFWtwgCdIadOEGbmFskj7J1cPbz9A4NCq6u-ayho6RhRVrVHjhDpdADMThu80WCAqeG+BHOEEu8P6gxOSN+9UagLyWLa1h4PGA8AqIygXjcni8wCEwmopQpo2pLzpDKZPXQLKpNO89JEXIhPIwlIZgsZ8Ah1CIWRAKDZtLQvKVAqAA)里会出现两处报错
+> 如果开启了[**`noImplicitThis`**](https://www.typescriptlang.org/tsconfig#noImplicitThis)选项 (默认为false), [下面代码](https://www.typescriptlang.org/play?#code/FAGwpgLgBAZgdlAvFAFASiQPigb2FAqAYwHs4BnE8AOhBIHMUIALAS3LWAF9hRIoSAIwBWSXPkIB6AFTSJhaVECb8YBnEwODGgLO0W7QN4+gaPVAPPKA5OUCFNoEhzQBSu8goqZtyALigB1VnAAmJAO5QAPlAA3ElZ3TkIbVG1HKAgATwAHMBIYKHo6QQBDEAAVezDw6UlreABGJ3QscXDw0goqMFoGO3Z8gi4AGmK4ACZyjERsHChJSShAOzNALASYAFc4IghWMkB75UBTuU0o-UBTc0ARyMB-BMAzaMApFWtwgCdIadOEGbmFskj7J1cPbz9A4NCq6u-ayho6RhRVrVHjhDpdADMThu80WCAqeG+BHOEEu8P6gxOSN+9UagLyWLa1h4PGA8AqIygXjcni8wCEwmopQpo2pLzpDKZPXQLKpNO89JEXIhPIwlIZgsZ8Ah1CIWRAKDZtLQvKVAqAA)里会出现两处报错
 - [x] **noImplicitThis** *(Enable error reporting when `this` is given the type `any`.)*  
-
-
 
 ```ts
 let fn = () => {
@@ -207,7 +210,7 @@ let fn = () => {
 
 let obj = {
   /**
-   * 这里指定this类型似乎没有用
+   * 这里指定this类型似乎没有用, 还是会报错
    * (this: Window | void) => void
    * (this: typeof globalThis) => void
    */
