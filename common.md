@@ -55,7 +55,6 @@ const configInfo
 - `只读属性`: 通过`readonly`关键词来声明, 后续属性的值不能修改, 效果类似`const`
 - `可选属性`: 意味着该变量可能是`undefined`, 所以处理的时候还需要额外判断该变量是否存在
 - `接口继承`: 可以使用`extends`继承多个接口, 并且多个接口之间要用`,`分隔
-- `索引签名<待完善>`: `[key: string]: any`
 
 ```ts
 // 当出现相同名称的接口时, 类型就会合并
@@ -81,6 +80,43 @@ let obj: AnotherType = {
   add: (x, y) => x + y,
   reduce: (x, y) => x - y
 }
+```
+
+### 索引签名
+
+##### **索引签名和属性同时使用**
+
+```ts
+// 因为 sex 也归属于字符串索引, 所以它必须是字符串索引的子类型, 或与其保持一致类型
+interface Obj {
+  [key: string]: string | number
+  name: string
+  age: number
+  sex: boolean // 报错: 不能将 boolean 类型分配给 string | number 类型
+}
+```
+
+##### **两种索引签名同时使用**
+
+索引签名的类型必须是字符串或数字, **并且当同时使用两种签名时, 数字索引必须是字符串索引的子类型**, 这是因为js内部会自动将数字转化成字符串
+也就是说`obj[99]`和`obj['99']`是等价的
+
+```ts
+// 父类型
+interface Parent { name: string }
+// 子类型
+interface Child extends Parent { age: number }
+
+// 同时使用两种索引签名时, 数字索引的返回类型必须是字符串索引返回类型的子类型
+interface Obj {
+  [key: string]: Parent
+  [key: number]: Child
+}
+
+let obj: Obj = {}
+obj['hello'] = { name: 'jack', age: 10 } // 报错: Parent 上没有 age 属性
+obj['999'] = { name: 'jack' } // 报错: Child 类型上缺少 age 属性
+obj[1000] = { name: 'jack' } // 报错: Child 类型上缺少 age 属性
 ```
 
 ## 函数类型
@@ -235,4 +271,144 @@ obj.fn1() // window
 obj.fn2()() // window
 obj.fn3()() // obj
 obj.fn3.call(window)() // window
+```
+
+
+## 泛型
+
+##### **泛型基础语法**
+
+```ts
+// 使用字面量的方式定义泛型类型的函数
+const fn1: <T>(arg: T) => T = arg => arg
+function fn2<T>(arg: T): T {
+  return arg
+}
+
+// 使用类型别名定义泛型类型的函数
+type FnType1 = <T>(arg: T) => T
+type FnType2 = {
+  <T>(arg: T): T
+}
+
+// 使用接口定义泛型类型的函数
+interface FnType3 {
+  <T>(arg: T): T
+}
+
+// 编译器会自动根据传入的类型去推断
+let num = fn1(999) // num: number
+
+// 当编译器无法推断时, 使用尖括号显式的指定其类型
+let str = fn1<string>('hello') // str: string
+```
+
+##### **泛型约束条件**
+
+```ts
+// 限制传入的类型里必须包含 length 属性, 并且是 number 类型
+function fn<T extends { length: number }>(arg: T): number {
+  return arg.length
+}
+
+fn('hello') // 正确
+fn([1, 2, 3]) // 正确
+fn({ length: 0 }) // 正确
+fn(999) // 报错: number 类型不能分配给 { length: number }
+```
+
+```ts
+// keyof T 实际上就是在获取obj上的所有key, 然后转成联合类型
+function getVal<T, K extends keyof T>(obj: T, key: K) {
+  return obj[key]
+}
+
+const obj = { name: 'jack', age: 99 }
+getVal(obj, 'name') // 'jack'
+getVal(obj, 'age') // 99
+getVal(obj, 'sex') // 报错: 联合类型 'name' | 'age' 中不包含 'sex'
+```
+
+## 类型运算符
+
+### keyof 运算符
+
+`keyof`运算符可以获取到对象类型所有 key 的文字类型或联合类型
+
+```ts
+type Point = { x: number, y: number }
+type PointKeys = keyof Point // 'x' | 'y'
+
+type Arr = { [key: number]: any }
+type ArrKeys = keyof Arr // number
+
+type HashMap = { [key: string]: any }
+type HashMapKeys = keyof HashMap // string | number
+```
+
+### typeof 运算符
+
+js里的`typeof`和ts里的`typeof`功能相似, 都是获取一个变量的类型
+
+!> ts里的`typeof`只能作用于变量, 直接`typeof 'hello'`是不允许的
+
+```ts
+type ErrType = typeof 'hello' // 报错
+
+let str = 'world'
+type Str = typeof str // string
+
+let obj = { name: 'jack', age: 20 }
+type Obj = typeof obj // { name: string, age: number }
+
+
+// 获取函数的返回值类型
+const fn = () => ({ x: 1, y: 1 })
+type Result = ReturnType<typeof fn> // { x: number, y: number }
+```
+
+## 索引访问类型
+
+```ts
+// 通过索引获取对应属性的类型
+type Obj = {
+  name: string,
+  age: number,
+  alive: boolean
+}
+type AgeType = Obj['age'] // number
+type NameOrAge = Obj['name' | 'age'] // string | number
+type ValueType = Obj[keyof Obj] // string | number | boolean
+type AnyType = Obj['xxx'] // 报错: Obj 上不存在 xxx 属性
+
+
+// 通过索引获取数组元素的类型
+const arr = [
+  { name: 'jack', sex: 0 },
+  { name: 'ben', sex: 1 }
+]
+type ItemType = typeof arr[number] // { name: string, sex: number }
+type NameType = typeof arr[number]['name'] // string
+type sexType = ItemType['sex'] // number
+
+// 通过变量的类型 来获取类型
+const key = 'sex'
+type keyType = ItemType[typeof key] // number
+```
+
+!> 通过索引访问类型时候, 不能使用字符串类型的变量, 但是可以通过变量推导出`文字类型`使用
+
+```ts
+const arr = [
+  { name: 'jack', sex: '男' },
+  { name: 'ben', age: 19 },
+  { fn: () => true }
+]
+arr.forEach(item => {
+  type ItemType = typeof item
+  (Object.keys(item) as (keyof ItemType)[]).forEach(key => {
+    type ValType = ItemType[typeof key] // 这里的 [typeof key] 是文字类型
+    let val: ValType = item[key]
+  })
+})
 ```
