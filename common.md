@@ -412,3 +412,145 @@ arr.forEach(item => {
   })
 })
 ```
+
+
+## 条件类型
+
+?> `TypeScript 2.8 新增: 条件类型`, 使得在ts里也可以通过逻辑判断来决定返回的类型, `T extends U ? X : Y`是在判断类型T是否能分配给类型U, 如果可以则返回类型X, 反之则返回类型Y
+
+
+```ts
+interface IdLabel { id: number }
+interface NameLabel { name: string }
+
+
+// 通过函数重载实现方法
+function fn1(id: number): IdLabel
+function fn1(name: string): NameLabel
+function fn1(nameOrId: number | string): IdLabel | NameLabel {
+  throw {}
+}
+fn1('hello') // NameLabel
+fn1(999) // IdLabel
+
+
+/**
+ * 通过泛型实现方法
+ * <T extends string | number> 首先约束参数的类型只能是字符串或数字
+ * (nameOrId: T) 然后指定传入的参数就是T, 方便进行自动推断
+ * (T extends number ? IdLabel : NameLabel) 如果T可以分配给number, 那就可以返回`IdLabel`类型
+ */
+function fn2<T extends string | number>(nameOrId: T): (T extends number ? IdLabel : NameLabel) {
+  throw {}
+}
+fn2('hello') // NameLabel
+fn2(999) // IdLabel
+```
+
+### 分布式特性
+
+在下面的示例中出现了奇怪的一幕, 类型A和类型B居然不一样, 按理说他们返回的都是`T[]`, 理论上返回值也应该一致才对
+
+```ts
+type ToArray1<T> = T[]
+type A = ToArray1<string | number> // A = (string | number)[]
+
+type ToArray2<T> = T extends any ? T[] : never
+type B = ToArray2<string | number> // B = string[] | number[]
+```
+
+出现这个问题是因为条件判断在遇到联合类型的时候具有分布式特性, 比如上面的`ToArray2`会分两次去判断
+
+- 第一次判断`string`能否分配给`any`, 可以的话返回`string[]`, 否则返回`never`
+- 第二次判断`number`能否分配给`any`, 可以的话返回`number[]`, 否则返回`never`
+- 然后两次结果合并就变成了`string[] | number[]`
+
+想避免这个问题也很简单, 只需要使用中括号把`泛型T`包裹起来: `[T]`, 他就会把`联合类型`当成一个整体去进行条件判断
+
+```ts
+type ToArray3<T> = [T] extends any ? T[] : never
+type C = ToArray3<string | number> // C = (string | number)[]
+```
+
+上面的`ToArray3`只经历了一次判断
+
+- 第一次判断`string | number`能否分配给`any`, 可以的话返回`(string | number)[]`, 否则返回`never`
+- 然后输出结果: `(string | number)[]`
+
+很多高级类型也是借助于这个特性来实现的, 比如`Diff<T, U>`和`Filter<T, U>`
+
+### infer 关键词
+
+
+获取数组`item 元素`的类型, 并且 `GetItemType1` 和 `GetItemType2` 等价
+
+
+```ts
+type GetItemType1<T> = T extends any[] ? T[number] : T
+type GetItemType2<T> = T extends Array<infer U> ? U : T
+
+
+type a = GetItemType1<number[]> // a: number
+type b = GetItemType2<number[]> // b: number
+type c = GetItemType1<any[]> // c: any
+type d = GetItemType2<any[]> // d: any
+type e = GetItemType1<Array<string | number>> // e: string | number
+type f = GetItemType2<Array<string | number>> // f: string | number
+```
+
+
+#### 实现 ReturnType 高级类型
+
+
+```ts
+// 提取出函数的返回值类型
+type GetReturn<T> = T extends (...args: never[]) => infer U ? U : never
+type d = GetReturn<() => void> // d: void
+type e = GetReturn<() => number[]> // e: number[]
+
+
+// 定义一个函数重载
+declare function fn(x: string): string
+declare function fn(x: number): number
+declare function fn(x: string | number): string | number
+
+
+type f = GetReturn<typeof fn> // f: string | number
+type g = ReturnType<typeof fn> // g: string | number
+```
+
+
+#### 两个疑问点
+
+
+```ts
+// 为什么这里使用了 never[] 作为函数的参数集合类型
+type GetReturnType1<T> = T extends (...args: never[]) => infer U ? U : never
+// 我认为我使用 unknown[] 会更合理一些? 因为我根本就不知道别人要传什么
+type GetReturnType2<T> = T extends (...args: unknown[]) => infer U ? U : never
+
+
+// 随便写一个函数, 测试 GetReturnType
+const fn = (arg: string | number) => typeof arg === 'string' ? '1' : 1
+
+
+// 然后我发现
+
+
+// 使用 never[] 的可以正确获取类型
+type FnReturnType1 = GetReturnType1<typeof fn>
+
+
+// 但是使用 unknown[] 却没有匹配上?
+type FnReturnType2 = GetReturnType2<typeof fn>
+
+
+/**
+ * 疑问1: never[] 表示什么意思, 如果说 never 表示无法达到, 那为啥还会有 never[], 无法达到的数组?
+ */
+
+
+/**
+ * 疑问2: 为啥 unknow[] 没有匹配成功进入了 false, 按理说应该可以?
+ */
+```
